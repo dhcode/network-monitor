@@ -1,11 +1,18 @@
 import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MonitorService {
-  events = this.socket.fromEvent<any>('event');
+  events = this.socket.fromEvent<any>('event').pipe(
+    map(e => {
+      if (e.responseStatus >= 400 && !e.error) {
+        e.error = 'HTTP Status ' + e.responseStatus;
+      }
+    })
+  );
 
   constructor(private socket: Socket) {}
 
@@ -38,6 +45,11 @@ export class MonitorService {
         },
         result => {
           console.log('getEvents result', result);
+          for (const e of result.events) {
+            if (e.responseStatus >= 400 && !e.error) {
+              e.error = 'HTTP Status ' + e.responseStatus;
+            }
+          }
           resolve(result.events);
         }
       );
