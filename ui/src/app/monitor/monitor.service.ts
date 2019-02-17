@@ -8,9 +8,10 @@ import { map } from 'rxjs/operators';
 export class MonitorService {
   events = this.socket.fromEvent<any>('event').pipe(
     map(e => {
-      if (e.responseStatus >= 400 && !e.error) {
+      if (e.type === 'http' && e.responseStatus >= 400 && !e.error) {
         e.error = 'HTTP Status ' + e.responseStatus;
       }
+      return e;
     })
   );
 
