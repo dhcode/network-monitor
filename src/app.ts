@@ -4,7 +4,8 @@ import * as serve from 'koa-static';
 import * as logger from 'koa-logger';
 import * as route from 'koa-route';
 import * as IO from 'koa-socket-2';
-import { getMonitor } from './monitor-repository';
+import { getMonitor, startMonitors, stopMonitor } from './monitor-repository';
+import { timedLog } from './utils';
 
 const app = new Koa();
 const io = new IO();
@@ -29,9 +30,17 @@ io.on('stop', (ctx, data) => {
     ctx.acknowledge({ left: url });
   }
 });
+io.on('pause', (ctx, data) => {
+  if (data.url) {
+    const url = new URL(data.url).toString();
+    stopMonitor(url);
+    ctx.socket.leave(url);
+    ctx.acknowledge({ paused: url });
+  }
+});
 
 io.on('getEvents', (ctx, data) => {
-  console.log('getEvents', data);
+  timedLog('getEvents', data);
   if (data.url && data.start && data.end) {
     const url = new URL(data.url).toString();
     const mon = getMonitor(url, io);
@@ -47,5 +56,7 @@ app.use(compress());
 const port = parseInt(process.env.PORT || '3000');
 
 app.listen(port, () => {
-  console.log('listening on http://localhost:' + port);
+  timedLog('listening on http://localhost:' + port);
 });
+
+startMonitors(io);

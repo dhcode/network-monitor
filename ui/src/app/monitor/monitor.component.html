@@ -1,9 +1,10 @@
 <div>
-  <form (submit)="startMonitor()">
+  <form (submit)="submitUrl()">
     <h1>Monitor URL</h1>
     <div class="input-group">
       <input type="text" name="url" class="form-control" [(ngModel)]="url">
       <button class="btn btn-primary">Start</button>
+      <button class="btn btn-outline-secondary" (click)="pauseUrl()" type="button">Pause</button>
     </div>
   </form>
 </div>

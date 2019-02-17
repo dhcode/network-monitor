@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MonitorService } from './monitor.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-monitor',
@@ -72,11 +73,24 @@ export class MonitorComponent implements OnInit, OnDestroy {
   };
   httpData = [];
 
-  constructor(private monitorService: MonitorService) {
+  constructor(
+    private monitorService: MonitorService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
     const storedUrl = window.localStorage.getItem('url');
     if (window.localStorage.getItem('url')) {
       this.url = storedUrl;
     }
+
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy))
+      .subscribe(queryParams => {
+        if (queryParams.url) {
+          this.url = queryParams.url;
+          this.startMonitor();
+        }
+      });
   }
 
   ngOnInit() {
@@ -98,6 +112,18 @@ export class MonitorComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroy.complete();
+  }
+
+  submitUrl() {
+    this.router.navigate([], {
+      queryParams: {
+        url: this.url
+      }
+    });
+  }
+
+  pauseUrl() {
+    this.monitorService.pause(this.url);
   }
 
   async startMonitor() {

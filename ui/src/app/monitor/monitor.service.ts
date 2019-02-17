@@ -21,6 +21,12 @@ export class MonitorService {
     });
   }
 
+  pause(url: string) {
+    this.socket.emit('pause', { url: url }, result => {
+      console.log('pause result', result);
+    });
+  }
+
   getEvents(url: string, time = 3600): Promise<any[]> {
     return new Promise(resolve => {
       this.socket.emit(
