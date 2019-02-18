@@ -148,7 +148,11 @@ export class Monitor {
       traces: [],
       error: null
     };
-    return traceIp(this.ip, 24, (error, target, ttl, sent, rcvd) => {
+    const options = {
+      ttl: 24,
+      maxHopTimeouts: 5
+    };
+    return traceIp(this.ip, options, (error, target, ttl, sent, rcvd) => {
       const ms = rcvd - sent;
       if (error) {
         if (error instanceof ping.TimeExceededError) {

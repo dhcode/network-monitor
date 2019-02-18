@@ -15,6 +15,8 @@ export class MonitorService {
     })
   );
 
+  hostCache: { [key: string]: Promise<string> } = {};
+
   constructor(private socket: Socket) {}
 
   start(url: string) {
@@ -33,6 +35,22 @@ export class MonitorService {
     this.socket.emit('pause', { url: url }, result => {
       console.log('pause result', result);
     });
+  }
+
+  resolveHost(ip: string): Promise<string> {
+    if (this.hostCache[ip]) {
+      return this.hostCache[ip];
+    }
+    return (this.hostCache[ip] = new Promise((resolve, reject) => {
+      this.socket.emit('resolveHost', { ip: ip }, result => {
+        console.log('resolve result ' + ip, result);
+        if (result.error) {
+          reject(result.error);
+        } else {
+          resolve(result.hostnames[0]);
+        }
+      });
+    }));
   }
 
   getEvents(url: string, time = 3600): Promise<any[]> {

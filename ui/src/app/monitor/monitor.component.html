@@ -20,7 +20,37 @@
   <app-chart [traces]="httpData" [layout]="httpLayout"></app-chart>
 
   <h3>Trace stats</h3>
-  <app-chart [traces]="traceData" [layout]="traceLayout"></app-chart>
+  <div class="row">
+    <div class="col-9">
+      <app-chart [traces]="traceData" [layout]="traceLayout"></app-chart>
+    </div>
+    <div class="col-3">
+      <table class="table table-sm">
+        <thead>
+        <tr>
+          <th>TTL</th>
+          <th>Sources</th>
+          <th>Errors</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let hop of traceStats">
+          <td>
+            {{hop.ttl}}
+          </td>
+          <td>
+            <div *ngFor="let s of hop.sources">
+              {{s.ip}} {{s.host?': '+s.host:''}}
+            </div>
+          </td>
+          <td>
+            {{hop.errors}}
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <div class="row">
 
@@ -43,40 +73,51 @@
         </button>
       </div>
 
-      <table class="table table-sm">
-        <thead>
-        <tr>
-          <th>Time</th>
-          <th>Type</th>
-          <th>Success</th>
-          <th>Duration</th>
-          <th>Result</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let e of displayEvents" (click)="openErrorDetails(e)"
-            [class.font-weight-bold]="e === errorDetailsActive">
-          <td>{{e.end}}</td>
-          <td>{{e.type}}</td>
-          <td>{{e.error ? 'ERROR' : 'OK'}}</td>
-          <td>{{getDuration(e)}}</td>
-          <td>
-            <ng-container *ngIf="!e.error && e.type === 'dns'">
-              Records: {{e.records}}
-            </ng-container>
-            <ng-container *ngIf="!e.error && e.type === 'trace'">
-              Hops: {{e.traces.length}}
-            </ng-container>
-            <ng-container *ngIf="!e.error && e.type === 'http'">
-              Status: {{e.responseStatus}}
-            </ng-container>
-            <ng-container *ngIf="e.error">
-              {{e.error}}
-            </ng-container>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+      <div class="btn-group ml-2" role="group">
+        <button type="button" class="btn btn-secondary" (click)="setErrorFilter(false)"
+                [class.active]="!filterErrors">All
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="setErrorFilter(true)"
+                [class.active]="filterErrors">Errors
+        </button>
+      </div>
+
+      <div style="max-height: 600px; overflow-y: auto">
+        <table class="table table-sm">
+          <thead>
+          <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Success</th>
+            <th>Duration</th>
+            <th>Result</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let e of displayEvents" (click)="openErrorDetails(e)"
+              [class.font-weight-bold]="e === errorDetailsActive">
+            <td>{{e.end}}</td>
+            <td>{{e.type}}</td>
+            <td>{{e.error ? 'ERROR' : 'OK'}}</td>
+            <td>{{getDuration(e)}}</td>
+            <td>
+              <ng-container *ngIf="!e.error && e.type === 'dns'">
+                Records: {{e.records}}
+              </ng-container>
+              <ng-container *ngIf="!e.error && e.type === 'trace'">
+                Hops: {{e.traces.length}}
+              </ng-container>
+              <ng-container *ngIf="!e.error && e.type === 'http'">
+                Status: {{e.responseStatus}}
+              </ng-container>
+              <ng-container *ngIf="e.error">
+                {{e.error}}
+              </ng-container>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
 
     </div>
     <div class="col-4" *ngIf="errorDetails">

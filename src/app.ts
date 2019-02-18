@@ -4,6 +4,7 @@ import * as serve from 'koa-static';
 import * as logger from 'koa-logger';
 import * as route from 'koa-route';
 import * as IO from 'koa-socket-2';
+import * as dns from 'dns';
 import { getMonitor, startMonitors, stopMonitor } from './monitor-repository';
 import { timedLog } from './utils';
 
@@ -36,6 +37,16 @@ io.on('pause', (ctx, data) => {
     stopMonitor(url);
     ctx.socket.leave(url);
     ctx.acknowledge({ paused: url });
+  }
+});
+io.on('resolveHost', (ctx, data) => {
+  if (data.ip) {
+    dns.reverse(data.ip, (err, hostnames) => {
+      ctx.acknowledge({
+        error: err ? err.toString() : undefined,
+        hostnames: hostnames
+      });
+    });
   }
 });
 

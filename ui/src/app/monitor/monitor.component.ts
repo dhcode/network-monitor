@@ -24,6 +24,8 @@ export class MonitorComponent implements OnInit, OnDestroy {
 
   timeFilter = 3600;
 
+  filterErrors = false;
+
   timeFilters = [
     { time: 3600, label: '1h' },
     { time: 3600 * 2, label: '2h' },
@@ -40,6 +42,7 @@ export class MonitorComponent implements OnInit, OnDestroy {
 
   traceLayout = {
     height: 400,
+    showlegend: false,
     yaxis: {
       automargin: true,
       type: 'category'
@@ -54,6 +57,7 @@ export class MonitorComponent implements OnInit, OnDestroy {
   };
 
   traceData = [];
+  traceStats = [];
 
   httpLayout = {
     height: 200,
@@ -154,12 +158,18 @@ export class MonitorComponent implements OnInit, OnDestroy {
     this.startMonitor();
   }
 
+  setErrorFilter(filterErrors: boolean) {
+    this.filterErrors = filterErrors;
+    this.setEvents();
+  }
+
   setEvents() {
     const filter = rangeFilter(this.getChartRange());
     this.displayEvents = this.events
       .filter(
         e => (this.typeFilter && e.type === this.typeFilter) || !this.typeFilter
       )
+      .filter(e => (this.filterErrors && e.error) || !this.filterErrors)
       .filter(filter)
       .reverse();
   }
@@ -189,12 +199,25 @@ export class MonitorComponent implements OnInit, OnDestroy {
     this.httpLayout.xaxis.range = this.getChartRange();
   }
 
-  updateTraceStats() {
+  async updateTraceStats() {
     const filter = rangeFilter(this.getChartRange());
     this.traceData = [];
+    this.traceStats = [];
     for (const e of this.events.filter(e => e.type === 'trace' && filter(e))) {
       this.updateTraceStatsByEvent(e);
     }
+
+    this.traceData.sort((a, b) => {
+      return a.ttl - b.ttl;
+    });
+    for (const hop of this.traceStats) {
+      for (const source of hop.sources) {
+        source.host = await this.monitorService
+          .resolveHost(source.ip)
+          .catch(e => '');
+      }
+    }
+    console.log('traceStats', this.traceStats);
 
     // console.log('traceData', this.traceData);
   }
@@ -203,8 +226,11 @@ export class MonitorComponent implements OnInit, OnDestroy {
     for (const t of e.traces) {
       const label = `${t.ttl}: ${t.source || t.error}`;
       let trace = this.traceData.find(et => et.name === label);
+      let traceStats = this.traceStats.find(et => et.ttl === t.ttl);
       if (!trace) {
         trace = {
+          sourceIp: t.source,
+          ttl: t.ttl,
           name: label,
           mode: 'markers',
           x: [],
@@ -217,6 +243,20 @@ export class MonitorComponent implements OnInit, OnDestroy {
           }
         };
         this.traceData.push(trace);
+      }
+      if (!traceStats) {
+        traceStats = {
+          ttl: t.ttl,
+          sources: [],
+          errors: 0
+        };
+        this.traceStats.push(traceStats);
+      }
+      if (t.source && !traceStats.sources.find(s => s.ip === t.source)) {
+        traceStats.sources.push({ ip: t.source, host: null });
+      }
+      if (!t.source) {
+        traceStats.errors++;
       }
 
       trace.x.push(e.start);
